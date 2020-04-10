@@ -9,6 +9,8 @@ output:
     toc: true
     toc_float: true
     df_print: paged
+    includes:
+      in_header: analytics.html
   pdf_document: default
 #cls: crop-science.csl
 #bibliography: lib.bib
