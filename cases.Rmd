@@ -84,7 +84,7 @@ cases <- cases[!(country%in%c("Diamond Princess","MS Zaandam"))]
 # remove * in Taiwan*
 cases[country=="Taiwan*",country:="Taiwan"]
 
-# some countries have outside provinces, mainland has also province same as country
+# some countries have outside provinces, mainland is identified by empty province
 
 counts <- c("France","United Kingdom","Denmark","Netherlands","Canada")
 for (counti in counts)
@@ -120,7 +120,7 @@ max(cases$date)
 nplot <- 20
 
 # countries that shall definetly be selected
-countadd <- c("Germany","Switzerland","Hong Kong","Singapore")
+countadd <- c("Germany","Switzerland","Hong Kong","Singapore","Sweden")
 # set actioni to confirmed or death
 actioni <- "confirmed"
 
