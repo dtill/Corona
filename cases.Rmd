@@ -4,6 +4,7 @@ author: "Samuel Knapp - samuel.k@gmx.de"
 editor_options:
   chunk_output_type: console
 output:
+  pdf_document: default
   html_document:
     code_folding: hide
     toc: true
@@ -11,7 +12,6 @@ output:
     df_print: paged
     includes:
       in_header: analytics.html
-  pdf_document: default
 #cls: crop-science.csl
 #bibliography: lib.bib
 ---
@@ -31,6 +31,9 @@ knitr::opts_chunk$set(fig.pos="center",fig.width=12, fig.height=8,
 root.dir <- rprojroot::find_rstudio_root_file()
 knitr::opts_knit$set(root.dir=root.dir)# 
 ```
+
+
+
 
 # Download data
 
