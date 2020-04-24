@@ -123,7 +123,7 @@ max(cases$date)
 nplot <- 20
 
 # countries that shall definetly be selected
-countadd <- c("Germany","Switzerland","Hong Kong","Singapore","Sweden")
+countadd <- c("Germany","Switzerland","Hong Kong","Singapore","Sweden","Austria","Greece")
 # set actioni to confirmed or death
 actioni <- "confirmed"
 
