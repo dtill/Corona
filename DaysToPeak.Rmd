@@ -1,0 +1,312 @@
+---
+layout: post
+title: "Corona - Days to peak"
+author: "Samuel Knapp - samuel.k@gmx.de"
+date: 2020-04-29
+categories: rblogging
+tags: corona
+# editor_options:
+#   chunk_output_type: console
+output:
+  md_document
+#     variant: gfm
+#     preserve_yaml: true
+#   html_document:
+#     keep_md: true
+#     code_folding: none
+#     toc: false
+#     toc_float: true
+#     df_print: paged
+#     includes:
+#       in_header: analytics.html
+#   pdf_document: default
+#cls: crop-science.csl
+#bibliography: lib.bib
+---
+  
+```{r setup, include=FALSE}
+library(knitr)
+library(data.table)
+library(ggplot2)
+library(gridExtra)
+library(ggpubr)
+library(ggrepel)
+library(pander)
+knitr::opts_chunk$set(fig.pos="center",fig.width=12, fig.height=25,
+                      tidy=F,
+                      eval=T,echo = F,message=F,warning=F,cache = F,
+                      fig.path = '{{site.baseurl}}/assets/DaysToPeak/'
+                      )
+root.dir <- rprojroot::find_rstudio_root_file()
+knitr::opts_knit$set(root.dir=root.dir)# 
+```
+
+
+
+
+# Download data
+
+Data were downloaded from the github repository of the Johns Hopkins University. These are the same data, from which the famous GIS world map is created.
+See: https://github.com/CSSEGISandData/COVID-19
+
+
+```{r Download and prepare}
+cases <- fread("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv")
+# turn into long format
+datecols <- names(cases)[-c(1:4)]
+idcols <- names(cases)[c(1:4)]
+cases <- melt(cases,id.vars=idcols,measure.vars=datecols,variable.name="date")
+cases$action<-"confirmed"
+
+#add death
+death <- fread("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv")
+datecols <- names(death)[-c(1:4)]
+idcols <- names(death)[c(1:4)]
+death <- melt(death,id.vars=idcols,measure.vars=datecols,variable.name="date")
+death$action<-"death"
+# bind
+cases <- rbind(cases,death)
+
+#################################
+# some renaming
+setnames(cases,"Country/Region","country")
+setnames(cases,"Province/State","province")
+setnames(cases,"value","number")
+
+# format date
+cases[,date:=as.Date(date,tryFormats = c("%m/%d/%y"))]
+# days since Jan 1st
+cases[,days:=as.numeric(date-as.Date("2020-01-01"))]
+
+# as Hong Kong is listed as country China, take out Hong Kong and set as country
+cases[province=="Hong Kong",country:="Hong Kong"]
+
+# sum over provinces for China
+chinadat <- cases[country=="China"]
+chinadat <- chinadat[,.(number=sum(number)),.(date,days,action,country)]
+cut <- cases[!country=="China"]
+cases <- rbind(cut,chinadat,fill=T)
+# sum over provinces for Canada
+chinadat <- cases[country=="Canada"]
+chinadat <- chinadat[,.(number=sum(number)),.(date,days,action,country)]
+cut <- cases[!country=="Canada"]
+cases <- rbind(cut,chinadat,fill=T)
+
+# remove cruise ships 
+ships <- c("Diamond Princess","MS Zaandam","Grand Princess")
+cases <- cases[!(country%in%ships)]
+cases <- cases[!(province%in%ships)]
+
+
+# remove * in Taiwan*
+cases[country=="Taiwan*",country:="Taiwan"]
+
+# some countries have outside provinces, mainland is identified by empty province
+counts <- c("France","United Kingdom","Denmark","Netherlands")
+for (counti in counts)
+{
+  changecases <- cases[country==counti& province==""]
+  cases <- cases[country!=counti]
+  cases <- rbind(cases,changecases)
+}
+
+
+# Australia sum over provinces
+aust <- cases[country=="Australia"]
+aust <- aust[,.(number=sum(number)),.(country,action,date,days)]
+cases <- cases[country!="Australia"]
+cases <- rbind(cases,aust,fill=T)
+
+# add population from https://en.wikipedia.org/wiki/List_of_countries_and_dependencies_by_population
+pop <- fread("pop.csv")
+#unique(cases$country)[!(unique(cases$country) %in% pop$country)]
+cases <- merge(cases,pop,by="country",all.x=T)
+
+# check how many countries and population
+# contsum <- cases[,.(pop=unique(population)),country]
+# nrow(contsum)
+# sum(contsum$pop,na.rm=T)
+```
+
+
+```{r LoadStriDat}
+# add stringency data from https://github.com/OxCGRT/covid-policy-tracker
+library(lubridate)
+stridat <- fread("https://raw.githubusercontent.com/OxCGRT/covid-policy-tracker/master/data/timeseries/stringencyindex_legacy.csv",
+                 na.strings=".")
+
+# give names for first two columns
+names(stridat)[1:2] <- c("stricountry","code")
+# remove notes (last three lines, where code column is "")
+stridat <- stridat[code!=""]
+
+
+datecols <- names(stridat)[-c(1:2)]
+idcols <- names(stridat)[c(1:2)]
+stridat <- melt(stridat,id.vars=idcols,measure.vars=datecols,variable.name="date")
+# transform date to POSIX
+stridat[,date:=dmy(as.character(date))]
+# days since Jan 1st
+stridat[,days:=as.numeric(date-as.Date("2020-01-01"))]
+
+# match country names with JHU data, table with matching names
+countdat <- data.table(stricountry=unique(stridat$stricountry))
+# which ones match
+countdat[,match:=stricountry%in%cases$country]
+# fill in matching countries
+countdat[match==T,country:=stricountry]
+
+# fill up some (important) missing ones
+countdat[stricountry=="United States",country:="US"]
+countdat[stricountry=="Slovak Republic",country:="Slovakia"]
+countdat[stricountry=="Czech Republic",country:="Czechia"]
+countdat[stricountry=="South Korea",country:="Korea, South"]
+countdat[stricountry=="Democratic Republic of Congo",country:="Congo (Kinshasa)"]
+countdat[stricountry=="Cape Verde",country:="Cabo Verde"]
+countdat[stricountry=="Palestine",country:="West Bank and Gaza"]
+#countdat[is.na(jhcountry)]
+
+# add to stridat
+stridat <- merge(stridat,countdat)
+
+# rename and clean
+setnames(stridat,"value","strindex")
+stridat <- stridat[,.(country,date,strindex,days)]
+# merge with cases
+#cases <- merge(cases,stridat,by=c("country","date","days"),all.x=T)
+
+
+# # example plot
+# countries <- c("Germany","Italy","Switzerland","US","Sweden","China","France","Netherlands",
+#                "Hong Kong")
+# ggplot(stridat[country%in%countries],aes(date,strindex))+
+#   facet_wrap(vars(country))+
+#   geom_point()+
+#   theme_bw()
+```
+
+
+
+This was last updated
+
+```{r}
+max(cases$date)
+```
+
+
+
+
+```{r}
+cases[,newcases:=number-shift(number),country]
+cases[,relnewcases:=number/shift(number),country]
+# remove ones
+cases <- cases[relnewcases!=1]
+```
+
+
+
+
+```{r FunctMaxDay}
+# countri <- "Uzbekistan"
+# 
+# newcases <- cases[country==countri&action=="confirmed",newcases]
+# days <- cases[country==countri&action=="confirmed",days]
+# number <- cases[country==countri&action=="confirmed",number]
+# thresh=100
+# span=0.5
+# check=3
+# ago=5
+# 
+# plot(days,newcases)
+# plot(days,number)
+# maxday(days,newcases,number,thresh,span,check,ago)
+
+maxday<- function(days,newcases,number,thresh=100,span=0.5,check=5,ago=10){
+  # cut off where 
+  newcases <- newcases[number>thresh]
+  days <- days[number>thresh]
+  # subtract so that first day is day 1
+  days <- days-min(days)+1
+  
+  model<-try(loess(newcases ~ days,span=span),silent = TRUE)
+  if (class(model)=="try-error"){
+    return(list(
+    maxday=as.integer(max(days)),
+    maxnewcases=as.integer(max(newcases)),
+    reached=F))
+  }
+  pred <- predict(model)
+  
+  ####### for test
+  # plot(days,newcases)
+  # lines(days,pred)
+  #####
+  
+  # get maxday
+  maxday<- days[pred==max(pred)]
+  maxnewcases <- max(pred)
+  
+  # check if peak is more than 10 days ago
+  if(max(days)-maxday>ago){
+    if(mean(pred[(which(pred==max(pred))+1):(which(pred==max(pred))+check)])<maxnewcases){
+    return(list(
+      maxday=as.integer(maxday),
+      maxnewcases=as.integer(maxnewcases),
+      reached=T))
+    }
+  } else{ return(list(
+    maxday=as.integer(max(days)),
+    maxnewcases=as.integer(max(pred)),
+    reached=F))
+  }
+}# end of function
+
+
+```
+
+
+```{r CountryTabFit}
+# FirstDay: day when more than 100 confirmed cases
+cases[,FirstDay:=min(days[number>100]),.(country,action)]
+cases[,DaysSince:=days-FirstDay,.(country,action)]
+
+
+# country table
+countover <- cases[action=="confirmed",
+      .(Confirmed=max(number),
+        MaxNewcases =max(newcases),
+        population=unique(population),
+        FirstDay=unique(FirstDay)),
+      .(country)]
+
+# only with more than 500 confirmed, to allow for senseful fit
+countover <- countover[Confirmed>500]
+# fit stats, using the function
+fit <- cases[country%in%countover$country &action=="confirmed",
+      maxday(days,newcases,number,thresh=100,span=0.5,check=10,ago=15),
+      .(country)]
+
+# add fit to countover
+countover <- merge(countover,fit)
+
+# add fit to cases
+cases <- merge(cases,fit,by="country",all.x=T)
+```
+
+
+```{r WithPeak}
+ggplot(cases[reached==T&action=="confirmed"],aes(DaysSince,newcases))+
+  facet_wrap(vars(country),scales = "free",ncol=4)+
+  geom_point()+
+  geom_smooth(col="grey",se=F,span=0.5)+
+  labs(x="",y="")  +
+  geom_vline(aes(xintercept=maxday),col="red")+
+  geom_hline(aes(yintercept=maxnewcases),col="blue")+
+  lims(x=c(0,50))+
+  labs(x="Days since more than 100 confirmed cases",
+       y="New confirmed cases per day")+
+  theme_bw()
+
+
+```
+

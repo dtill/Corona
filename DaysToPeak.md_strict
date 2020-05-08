@@ -1,0 +1,13 @@
+Download data
+=============
+
+Data were downloaded from the github repository of the Johns Hopkins
+University. These are the same data, from which the famous GIS world map
+is created. See:
+<a href="https://github.com/CSSEGISandData/COVID-19" class="uri">https://github.com/CSSEGISandData/COVID-19</a>
+
+This was last updated
+
+    ## [1] "2020-04-28"
+
+![](%7B%7Bsite.baseurl%7D%7D/assets/DaysToPeak/WithPeak-1.png)
