@@ -42,7 +42,12 @@ See: https://github.com/CSSEGISandData/COVID-19
 
 
 ```{r Download and prepare}
-cases <- fread("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv")
+base_url = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master"
+cases_url = paste(
+  base_url, 
+  "/csse_covid_19_data/csse_covid_19_time_series",
+  "/time_series_covid19_confirmed_global.csv", sep="")
+cases <- fread(cases_url)
 # turn into long format
 datecols <- names(cases)[-c(1:4)]
 idcols <- names(cases)[c(1:4)]
@@ -50,7 +55,11 @@ cases <- melt(cases,id.vars=idcols,measure.vars=datecols,variable.name="date")
 cases$action<-"confirmed"
 
 #add death
-death <- fread("https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv")
+death_data_url = paste(
+  base_url, 
+  "/csse_covid_19_data/csse_covid_19_time_series",
+  "/time_series_covid19_deaths_global.csv", sep="")
+death <- fread(death_data_url)
 datecols <- names(death)[-c(1:4)]
 idcols <- names(death)[c(1:4)]
 death <- melt(death,id.vars=idcols,measure.vars=datecols,variable.name="date")
@@ -98,9 +107,10 @@ for (counti in counts)
 }
 
 
-# add population from https://en.wikipedia.org/wiki/List_of_countries_and_dependencies_by_population
+# add population from 
+# https://en.wikipedia.org/wiki/List_of_countries_and_dependencies_by_population
 pop <- fread("pop.csv")
-#unique(cases$country)[!(unique(cases$country) %in% pop$country)]
+# unique(cases$country)[!(unique(cases$country) %in% pop$country)]
 cases <- merge(cases,pop,by="country",all.x=T)
 
 # check how many countries and population
@@ -123,7 +133,8 @@ max(cases$date)
 nplot <- 20
 
 # countries that shall definetly be selected
-countadd <- c("Germany","Switzerland","Hong Kong","Singapore","Sweden","Austria","Greece")
+countadd <- c("Germany","Switzerland","Hong Kong",
+              "Singapore","Sweden","Austria","Greece")
 # set actioni to confirmed or death
 actioni <- "confirmed"
 
