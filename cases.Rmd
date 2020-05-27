@@ -4,7 +4,6 @@ author: "Samuel Knapp - samuel.k@gmx.de"
 editor_options:
   chunk_output_type: console
 output:
-  pdf_document: default
   html_document:
     code_folding: hide
     toc: true
@@ -12,6 +11,7 @@ output:
     df_print: paged
     includes:
       in_header: analytics.html
+  pdf_document: default
 #cls: crop-science.csl
 #bibliography: lib.bib
 ---
@@ -38,7 +38,7 @@ knitr::opts_knit$set(root.dir=root.dir)#
 # Download data
 
 Data were downloaded from the github repository of the Johns Hopkins University. These are the same data, from which the famous GIS world map is created.
-See: https://github.com/CSSEGISandData/COVID-19
+See: [https://github.com/CSSEGISandData/COVID-19](https://github.com/CSSEGISandData/COVID-19)
 
 
 ```{r Download and prepare}
