@@ -4,7 +4,6 @@ author: "Samuel Knapp - samuel.k@gmx.de"
 editor_options:
   chunk_output_type: console
 output:
-  pdf_document: default
   html_document:
     code_folding: hide
     toc: true
@@ -12,6 +11,9 @@ output:
     df_print: paged
     includes:
       in_header: analytics.html
+  pdf_document: 
+    toc: true
+    keep_tex: true
 #cls: crop-science.csl
 #bibliography: lib.bib
 ---
@@ -28,17 +30,21 @@ knitr::opts_chunk$set(fig.pos="center",fig.width=12, fig.height=8,
                       tidy=F,
                       eval=T,echo = T,message=F,warning=F,cache = F
                       )
+# set this if you dont want code in pdf knit:
+knitr::opts_chunk$set(echo = F) 
+# set this if u want to change your rstudio python path used to execute python-chunks
+# knitr::opts_chunk$set(engine.path = list(python = '/usr/local/anaconda3/bin/python'))
+
 root.dir <- rprojroot::find_rstudio_root_file()
 knitr::opts_knit$set(root.dir=root.dir)# 
 ```
 
 
-
-
 # Download data
 
+## Covid-19 data
 Data were downloaded from the github repository of the Johns Hopkins University. These are the same data, from which the famous GIS world map is created.
-See: [https://github.com/CSSEGISandData/COVID-19](https://github.com/CSSEGISandData/COVID-19)
+See: [https://github.com/CSSEGISandData/COVID-19](https://github.com/CSSEGISandData/COVID-19).
 
 
 ```{r Download and prepare}
@@ -109,7 +115,11 @@ for (counti in counts)
 
 # add population from 
 # https://en.wikipedia.org/wiki/List_of_countries_and_dependencies_by_population
-pop <- fread("pop.csv")
+#pop <- fread("pop.csv")
+
+# use this line if you generated your own pop_fresh.csv file from python chunk above
+pop <- fread("pop_fresh.csv")
+
 # unique(cases$country)[!(unique(cases$country) %in% pop$country)]
 cases <- merge(cases,pop,by="country",all.x=T)
 
@@ -125,6 +135,74 @@ Newest date
 format(as.Date(substring(max(cases$date), 3)), "20%y-%m-%d")
 ```
 
+```{r}
+# if you get a Import- or ModuleNotFound-Error in the python part below run these next 3 lines once on your machine:
+# or on a terminal do: 'pip install python-dateutil, requests, bs4'
+
+library(reticulate)
+#use_python("/usr/local/bin/python")  # change to whatever your desired python path is
+# use_virtualenv("~/myenv")
+#py_install("bs4")
+#py_install("requests")
+#py_install("python-dateutil")
+
+#reticulate::py_config() # check python version
+
+```
+## Population data
+
+```{python}
+wiki_pop_url = 'https://en.wikipedia.org/wiki/List_of_countries_and_dependencies_by_population'
+```
+Population data taken from wikipedia: [`r py$wiki_pop_url`](`r py$wiki_pop_url`). Most numbers are from national or UN annual projections. 
+```{python}
+#crawl wikipedia page for population data:
+#print(sys.version)
+from datetime import datetime, date
+from dateutil import parser
+from bs4 import BeautifulSoup
+import requests
+
+def clean_date(in_str):
+    str_spl = in_str.split(' ')
+    date_from_str = None
+    if len(str_spl) == 3:
+        date_from_str = parser.parse(in_str)  # datetime.strptime(in_str, '%d %b %Y')
+    if len(str_spl) == 1:
+        date_from_str = parser.parse(in_str)  # datetime.strptime(in_str, '%Y')
+    return date_from_str.strftime("%Y-%m-%d")
+
+
+def world_population_from_wiki_to_csv():
+    r = 'country,population,last_updated_at_wiki\n'
+    html = BeautifulSoup(
+        requests.get('https://en.wikipedia.org/wiki/List_of_countries_and_dependencies_by_population').content,
+        features='html.parser').prettify()
+    s = BeautifulSoup(html, features='html.parser')
+    rows = s.find('table').find('tbody').find_all('tr')
+    data = []
+    for row in rows:
+        cols = row.find_all('td')
+        cols = [ele.text.strip() for ele in cols]
+        data.append([ele for ele in cols])
+    for i in data:
+        if i:
+            r = r + str(i[1].split('\n')[0].replace(',', '')) + ',' + str(i[2].replace(',', '')) + ',' + clean_date(str(i[4])) + '\n'
+    # replace United States with US:
+    r = r.replace('United States', 'US')
+    with open('pop_fresh.csv', 'w') as f:
+        f.write(r)
+    # return r
+
+# now call the funcion to get newest population data from wikipedia into csv file:
+world_population_from_wiki_to_csv() 
+```
+
+Newest projection:
+```{r}
+pop_fresh <- fread("pop_fresh.csv")
+max(pop_fresh$last_updated_at_wiki)
+```
 
 # Selected countries
 
@@ -150,6 +228,7 @@ countsel <- sort(countsel)
 
 The following countries were set to be included: `r countadd`. Additionally, `r nplot-length(countadd)` countries with the highest number of confirmed cases were added.
 
+\newpage
 
 # Actual numbers
 
@@ -165,6 +244,8 @@ ggplot(cases[country%in%countsel],aes(date,number/1000,colour=action))+
   geom_line()+
   theme_bw()
 ```
+
+\newpage
 
 # Ratio of death to infected
 
@@ -190,6 +271,7 @@ ggplot(casw[country%in%countsel],aes(date,ratio*100))+
 # 
 #
 ```
+\newpage
 
 # New cases 
 
@@ -229,6 +311,7 @@ ggplot(cases[country%in%countsel&action=="confirmed"],aes(date,relnewcases))+
   theme_bw()
 
 ```
+\newpage
 
 ## Absolute increase
 
@@ -250,6 +333,7 @@ ggplot(cases[country%in%countsel&action=="confirmed"],aes(date,newcases))+
   #lims(y=c(1,1.5))+
   theme_bw()
 ```
+\newpage
 
 ### As number per 100 thousand inhabitants
 
@@ -379,6 +463,7 @@ ggplot(cases[country%in%countsel&action=="confirmed"],aes(date,newcases_pop*1000
 <!-- # plot(density(coltab$b)) -->
 
 <!-- ``` -->
+\newpage
 
 # Percentage of population
 
@@ -386,7 +471,7 @@ Number of confirmed cases (most recent day) divided by the total population.
 
 ```{r RelateToPop}
 ratab <- cases[action=="confirmed",.(RatioPercent=max(number)/max(population)*100),.(country)]
-kable(head(ratab[order(-RatioPercent)],50),digits=3)
+kable(head(ratab[order(-RatioPercent)],48),digits=3)
 ```
 
 
