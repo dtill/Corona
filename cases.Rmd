@@ -4,6 +4,7 @@ author: "Samuel Knapp - samuel.k@gmx.de"
 editor_options:
   chunk_output_type: console
 output:
+  pdf_document: default
   html_document:
     code_folding: hide
     toc: true
@@ -11,7 +12,6 @@ output:
     df_print: paged
     includes:
       in_header: analytics.html
-  pdf_document: default
 #cls: crop-science.csl
 #bibliography: lib.bib
 ---
@@ -130,7 +130,7 @@ format(as.Date(substring(max(cases$date), 3)), "20%y-%m-%d")
 
 ```{r}
 # number of countries to be plotted
-nplot <- 20
+nplot <- 30
 
 # countries that shall definetly be selected
 countadd <- c("Germany","Switzerland","Hong Kong",
