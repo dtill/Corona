@@ -9,9 +9,6 @@ editor_options:
    chunk_output_type: console
 output:
   # md_document
-  pdf_document: default
-  #   preserve_yaml: true
-  #   variant: gfm
   html_document:
     keep_md: true
     code_folding: none
@@ -20,6 +17,9 @@ output:
     df_print: paged
     #includes:
       #in_header: analytics.html
+  #   preserve_yaml: true
+  #   variant: gfm
+  pdf_document: default
 #cls: crop-science.csl
 #bibliography: lib.bib
 ---
@@ -45,7 +45,7 @@ knitr::opts_knit$set(root.dir=root.dir)#
 ## Download data
 
 Data were downloaded from the github repository of the Johns Hopkins University. These are the same data, from which the famous GIS world map is created.
-See: [https://github.com/CSSEGISandData/COVID-19] (https://github.com/CSSEGISandData/COVID-19)
+See: [https://github.com/CSSEGISandData/COVID-19](https://github.com/CSSEGISandData/COVID-19)
 
 
 ```{r Download and prepare}

@@ -32,7 +32,7 @@ output:
 ## Download data
 
 Data were downloaded from the github repository of the Johns Hopkins University. These are the same data, from which the famous GIS world map is created.
-See: [https://github.com/CSSEGISandData/COVID-19] (https://github.com/CSSEGISandData/COVID-19)
+See: [https://github.com/CSSEGISandData/COVID-19](https://github.com/CSSEGISandData/COVID-19)
 
 
 
@@ -122,6 +122,6 @@ Ghana                       42
 Ecuador                     41
 France                      41
 
-![]({{site.baseurl}}/assets/DaysToPeak/WithPeak-1.png)<!-- -->
+![](DaysToPeak_files/figure-html/WithPeak-1.png)<!-- -->
 
 
