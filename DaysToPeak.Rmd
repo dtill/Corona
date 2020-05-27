@@ -2,13 +2,12 @@
 layout: post
 title: "Corona - Days to peak"
 author: "Samuel Knapp - samuel.k@gmx.de"
-date: 2020-04-29
+#date: 2020-04-29
 categories: rblogging
 tags: corona
 editor_options:
    chunk_output_type: console
 output:
-  # md_document
   html_document:
     keep_md: true
     code_folding: none
@@ -17,8 +16,9 @@ output:
     df_print: paged
     #includes:
       #in_header: analytics.html
-  #   preserve_yaml: true
-  #   variant: gfm
+  md_document:
+     #variant: gfm
+     #preserve_yaml: true
   pdf_document: default
 #cls: crop-science.csl
 #bibliography: lib.bib
