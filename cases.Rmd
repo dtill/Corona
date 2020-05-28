@@ -4,6 +4,9 @@ author: "Samuel Knapp - samuel.k@gmx.de"
 editor_options:
   chunk_output_type: console
 output:
+  pdf_document: 
+    toc: true
+    keep_tex: true
   html_document:
     code_folding: hide
     toc: true
@@ -11,9 +14,6 @@ output:
     df_print: paged
     includes:
       in_header: analytics.html
-  pdf_document: 
-    toc: true
-    keep_tex: true
 #cls: crop-science.csl
 #bibliography: lib.bib
 ---
