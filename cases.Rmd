@@ -4,16 +4,16 @@ author: "Samuel Knapp - samuel.k@gmx.de"
 editor_options:
   chunk_output_type: console
 output:
-  pdf_document: 
-    toc: true
-    keep_tex: true
   html_document:
     code_folding: hide
     toc: true
     toc_float: true
     df_print: paged
-    includes:
-      in_header: analytics.html
+    #includes:
+      #in_header: analytics.html
+  pdf_document: 
+    toc: true
+    keep_tex: true
 #cls: crop-science.csl
 #bibliography: lib.bib
 ---
@@ -30,8 +30,8 @@ knitr::opts_chunk$set(fig.pos="center",fig.width=12, fig.height=8,
                       tidy=F,
                       eval=T,echo = T,message=F,warning=F,cache = F
                       )
-# set this if you dont want code in pdf knit:
-knitr::opts_chunk$set(echo = F) 
+# set this if you dont want code in knitr output:
+knitr::opts_chunk$set(echo = T) 
 # set this if u want to change your rstudio python path used to execute python-chunks
 # knitr::opts_chunk$set(engine.path = list(python = '/usr/local/anaconda3/bin/python'))
 
@@ -41,100 +41,6 @@ knitr::opts_knit$set(root.dir=root.dir)#
 
 
 # Download data
-
-## Covid-19 data
-Data were downloaded from the github repository of the Johns Hopkins University. These are the same data, from which the famous GIS world map is created.
-See: [https://github.com/CSSEGISandData/COVID-19](https://github.com/CSSEGISandData/COVID-19).
-
-
-```{r Download and prepare}
-base_url = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master"
-cases_url = paste(
-  base_url, 
-  "/csse_covid_19_data/csse_covid_19_time_series",
-  "/time_series_covid19_confirmed_global.csv", sep="")
-cases <- fread(cases_url)
-# turn into long format
-datecols <- names(cases)[-c(1:4)]
-idcols <- names(cases)[c(1:4)]
-cases <- melt(cases,id.vars=idcols,measure.vars=datecols,variable.name="date")
-cases$action<-"confirmed"
-
-#add death
-death_data_url = paste(
-  base_url, 
-  "/csse_covid_19_data/csse_covid_19_time_series",
-  "/time_series_covid19_deaths_global.csv", sep="")
-death <- fread(death_data_url)
-datecols <- names(death)[-c(1:4)]
-idcols <- names(death)[c(1:4)]
-death <- melt(death,id.vars=idcols,measure.vars=datecols,variable.name="date")
-death$action<-"death"
-# bind
-cases <- rbind(cases,death)
-
-#################################
-# some renaming
-setnames(cases,"Country/Region","country")
-setnames(cases,"Province/State","province")
-setnames(cases,"value","number")
-
-# format date
-cases[,date:=as.Date(date,tryFormats = c("%m/%d/%Y"))]
-# number of days after first date in table
-cases[,days:=as.numeric(date-min(date))]
-
-
-
-# as Hong Kong is listed as country China, take out Hong Kong and set as country
-cases[province=="Hong Kong",country:="Hong Kong"]
-
-
-# sum over provinces for China
-chinadat <- cases[country=="China"]
-chinadat <- chinadat[,.(number=sum(number)),.(date,days,action,country)]
-cut <- cases[!country=="China"]
-cases <- rbind(cut,chinadat,fill=T)
-
-# remove cruise ships 
-cases <- cases[!(country%in%c("Diamond Princess","MS Zaandam"))]
-
-# remove * in Taiwan*
-cases[country=="Taiwan*",country:="Taiwan"]
-
-# some countries have outside provinces, mainland is identified by empty province
-
-counts <- c("France","United Kingdom","Denmark","Netherlands","Canada")
-for (counti in counts)
-{
-  changecases <- cases[country==counti& province==""]
-  cases <- cases[country!=counti]
-  cases <- rbind(cases,changecases)
-}
-
-
-# add population from 
-# https://en.wikipedia.org/wiki/List_of_countries_and_dependencies_by_population
-#pop <- fread("pop.csv")
-
-# use this line if you generated your own pop_fresh.csv file from python chunk above
-pop <- fread("pop_fresh.csv")
-
-# unique(cases$country)[!(unique(cases$country) %in% pop$country)]
-cases <- merge(cases,pop,by="country",all.x=T)
-
-# check how many countries and population
-# contsum <- cases[,.(pop=unique(population)),country]
-# nrow(contsum)
-# sum(contsum$pop,na.rm=T)
-```
-
-Newest date
-
-```{r}
-format(as.Date(substring(max(cases$date), 3)), "20%y-%m-%d")
-```
-
 ```{r}
 # if you get a Import- or ModuleNotFound-Error in the python part below run these next 3 lines once on your machine:
 # or on a terminal do: 'pip install python-dateutil, requests, bs4'
@@ -198,23 +104,120 @@ def world_population_from_wiki_to_csv():
 world_population_from_wiki_to_csv() 
 ```
 
-Newest projection:
+Projection range of population data:
 ```{r}
 pop_fresh <- fread("pop_fresh.csv")
+# format date
+pop_fresh[,last_updated_at_wiki:=as.Date(last_updated_at_wiki,tryFormats = c("%Y-%m-%d"))]
+
+min(pop_fresh$last_updated_at_wiki)
 max(pop_fresh$last_updated_at_wiki)
+```
+
+## Covid-19 data
+Data were downloaded from the github repository of the Johns Hopkins University. These are the same data, from which the famous GIS world map is created.
+See: [https://github.com/CSSEGISandData/COVID-19](https://github.com/CSSEGISandData/COVID-19).
+
+
+```{r Download and prepare}
+base_url = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master"
+cases_url = paste(
+  base_url, 
+  "/csse_covid_19_data/csse_covid_19_time_series",
+  "/time_series_covid19_confirmed_global.csv", sep="")
+cases <- fread(cases_url)
+# turn into long format
+datecols <- names(cases)[-c(1:4)]
+idcols <- names(cases)[c(1:4)]
+cases <- melt(cases,id.vars=idcols,measure.vars=datecols,variable.name="date")
+cases$action<-"confirmed"
+
+#add death
+death_data_url = paste(
+  base_url, 
+  "/csse_covid_19_data/csse_covid_19_time_series",
+  "/time_series_covid19_deaths_global.csv", sep="")
+death <- fread(death_data_url)
+datecols <- names(death)[-c(1:4)]
+idcols <- names(death)[c(1:4)]
+death <- melt(death,id.vars=idcols,measure.vars=datecols,variable.name="date")
+death$action<-"death"
+# bind
+cases <- rbind(cases,death)
+
+#################################
+# some renaming
+setnames(cases,"Country/Region","country")
+setnames(cases,"Province/State","province")
+setnames(cases,"value","number")
+
+# format date
+cases[,date:=as.Date(date,tryFormats = c("%m/%d/%y"))]
+# number of days after first date in table
+cases[,days:=as.numeric(date-min(date))]
+
+
+
+# as Hong Kong is listed as country China, take out Hong Kong and set as country
+cases[province=="Hong Kong",country:="Hong Kong"]
+
+
+# sum over provinces for China
+chinadat <- cases[country=="China"]
+chinadat <- chinadat[,.(number=sum(number)),.(date,days,action,country)]
+cut <- cases[!country=="China"]
+cases <- rbind(cut,chinadat,fill=T)
+
+# remove cruise ships 
+cases <- cases[!(country%in%c("Diamond Princess","MS Zaandam"))]
+
+# remove * in Taiwan*
+cases[country=="Taiwan*",country:="Taiwan"]
+
+# some countries have outside provinces, mainland is identified by empty province
+
+counts <- c("France","United Kingdom","Denmark","Netherlands","Canada")
+for (counti in counts)
+{
+  changecases <- cases[country==counti& province==""]
+  cases <- cases[country!=counti]
+  cases <- rbind(cases,changecases)
+}
+
+
+# add population from 
+# https://en.wikipedia.org/wiki/List_of_countries_and_dependencies_by_population
+#pop <- fread("pop.csv")
+
+# use this line if you generated your own pop_fresh.csv file from python chunk above
+pop <- fread("pop_fresh.csv")
+
+# unique(cases$country)[!(unique(cases$country) %in% pop$country)]
+cases <- merge(cases,pop,by="country",all.x=T)
+
+# check how many countries and population
+# contsum <- cases[,.(pop=unique(population)),country]
+# nrow(contsum)
+# sum(contsum$pop,na.rm=T)
+```
+
+Newest date
+
+```{r}
+max(cases$date)
 ```
 
 # Selected countries
 
 ```{r}
 # number of countries to be plotted
-nplot <- 30
+nplot <- 25
 
 # countries that shall definetly be selected
 countadd <- c("Germany","Switzerland","Hong Kong",
               "Singapore","Sweden","Austria","Greece")
 # set actioni to confirmed or death
-actioni <- "confirmed"
+actioni <- "death"
 
 # table with most cases for given action
 countover <- cases[action==actioni,.(maxnumber=max(number)),country]
@@ -258,7 +261,9 @@ Note, that in Italy last points are not in plot anymore.
 # ################ 
 # # use wide form
 # wide form with columns for confirmed and death
-casw <- dcast(cases,country+province+Lat+Long+date~action,value.var="number")
+# produces error for United Kingdom when 'Lat+Long' is included
+casw <- dcast(cases,country+province+date~action,value.var="number") 
+#casw <- dcast(cases,country+date~action,value.var="number")
 
 casw[,ratio:=death/confirmed]
 ggplot(casw[country%in%countsel],aes(date,ratio*100))+
@@ -270,6 +275,22 @@ ggplot(casw[country%in%countsel],aes(date,ratio*100))+
   theme_bw()
 # 
 #
+```
+```{r }
+# 
+# ################ 
+# # use wide form
+# wide form with columns for confirmed and death
+
+# ggplot(casw['United Kingdom'],aes(date,ratio*100))+
+#   facet_wrap(vars(country),#scales="free_y"
+#              )+
+#   geom_line()+
+#   labs(x="",y="Ratio death/confirmed (%)")+
+#   lims(y=c(0,20))+
+#   theme_bw()
+# # 
+# #
 ```
 \newpage
 
@@ -506,7 +527,7 @@ countover <- cases[action==actioni,.(maxnumber=max(number)),country]
 countover <- countover[order(-maxnumber)]
 # some countries that shall be included
 #countadd <- c("Singapore","Hong Kong","Switzerland")
-countadd <- c("Switzerland")
+countadd <- c("Germany","Hong Kong","Switzerland")
 countmost <- countover[order(-maxnumber),country]
 # remove specific countries from most
 countmost <- countmost[!(countmost %in% countadd)]
