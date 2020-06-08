@@ -4,6 +4,9 @@ author: "Samuel Knapp - samuel.k@gmx.de"
 editor_options:
   chunk_output_type: console
 output:
+  pdf_document: 
+    toc: true
+    keep_tex: true
   html_document:
     code_folding: hide
     toc: true
@@ -11,9 +14,6 @@ output:
     df_print: paged
     #includes:
       #in_header: analytics.html
-  pdf_document: 
-    toc: true
-    keep_tex: true
 #cls: crop-science.csl
 #bibliography: lib.bib
 ---
@@ -31,7 +31,7 @@ knitr::opts_chunk$set(fig.pos="center",fig.width=12, fig.height=8,
                       eval=T,echo = T,message=F,warning=F,cache = F
                       )
 # set this if you dont want code in knitr output:
-knitr::opts_chunk$set(echo = T) 
+knitr::opts_chunk$set(echo = F) 
 # set this if u want to change your rstudio python path used to execute python-chunks
 # knitr::opts_chunk$set(engine.path = list(python = '/usr/local/anaconda3/bin/python'))
 
