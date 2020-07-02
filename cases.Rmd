@@ -61,14 +61,14 @@ library(reticulate)
 wiki_pop_url = 'https://en.wikipedia.org/wiki/List_of_countries_and_dependencies_by_population'
 ```
 Population data taken from wikipedia: [`r py$wiki_pop_url`](`r py$wiki_pop_url`). Most numbers are from national or UN annual projections. 
-```{python}
+```{python eval = FALSE, echo = FALSE}
 #crawl wikipedia page for population data:
 #print(sys.version)
 from datetime import datetime, date
 from dateutil import parser
 from bs4 import BeautifulSoup
 import requests
-
+# TODO Fix this and reactivate eval in code chunk.
 def clean_date(in_str):
     str_spl = in_str.split(' ')
     date_from_str = None
